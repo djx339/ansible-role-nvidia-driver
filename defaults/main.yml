@@ -1,0 +1,3 @@
+---
+# defaults file for nvidia-driver
+nvidia_driver_version: latest

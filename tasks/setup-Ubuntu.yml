@@ -1,0 +1,46 @@
+---
+- name: Create nvidia_driver_ppa_state variable
+  set_fact:
+    nvidia_driver_ppa_state: "{{ 'absent' if not nvidia_driver_use_ppa else 'present' }}"
+  tags:
+    - install
+
+- name: Add apt repository
+  apt_repository: "repo={{ nvidia_driver_apt_repository }} state={{ nvidia_driver_ppa_state }}"
+  tags:
+    - install
+
+- name: Search for latset package
+  shell: apt-cache search --names-only "nvidia-" | grep "nvidia-[[:digit:]]\+ " | awk '{print $1}' | uniq | sort -r | head -1
+  regrister: _nv_latest_package
+  when: nvidia_driver_version == 'latest'
+  tags:
+    - install
+
+- name: Create nvidia_driver_package variable
+  set_fact:
+    nvidia_driver_package: "{{ _nv_latest_package.stdout if nvidia_driver_version == 'latest' else 'nvidia-'nvidia_driver_version }}"
+  tags:
+    - install
+
+- name: Install nvidia driver
+  apt: "name={{ nvidia_driver_package }} state=present force=yes update_cache=yes"
+  register: nvidia_driver_install_result
+  tags:
+    - install
+
+- name: reboot
+  shell: reboot
+  async: 0
+  poll: 0
+  when: nvidia_driver_install_result|changed
+  tags:
+    - always
+
+- name: waiting for server to come back
+  local_action: >
+    wait_for host="{{ ansible_ssh_host | default(inventory_hostname) }}"
+    state=started port=22 delay=30 timeout=600 connect_timeout=15
+  when: nvidia_driver_install_result|changed
+  tags:
+    - always

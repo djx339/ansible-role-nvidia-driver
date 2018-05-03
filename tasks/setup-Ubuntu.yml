@@ -20,13 +20,15 @@
   register: nvidia_driver_install_result
 
 - name: reboot
-  shell: reboot
-  async: 5
+  shell: "sleep 5 & reboot"
+  async: 1
   poll: 0
   when: nvidia_driver_install_result|changed
 
 - name: waiting for server to come back
-  local_action: >
-    wait_for host="{{ ansible_ssh_host | default(inventory_hostname) }}"
-    state=started port=22 delay=30 timeout=600 connect_timeout=15
+  wait_for_connection:
+    connect_timeout: 5
+    sleep: 5
+    delay: 30
+    timeout: 600
   when: nvidia_driver_install_result|changed

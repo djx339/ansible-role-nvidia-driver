@@ -25,7 +25,7 @@
   register: nvidia_driver_install_result
 
 - name: reboot
-  shell: "sleep 5 & reboot"
+  shell: "sleep 5 && reboot"
   async: 1
   poll: 0
   when: nvidia_driver_install_result|changed

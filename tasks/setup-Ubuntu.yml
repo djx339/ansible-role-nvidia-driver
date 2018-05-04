@@ -4,7 +4,7 @@
     nvidia_driver_ppa_state: "{{ 'absent' if not nvidia_driver_use_ppa else 'present' }}"
 
 - name: Add apt repository
-  apt_repository: "repo={{ nvidia_driver_apt_repository }} state={{ nvidia_driver_ppa_state }}"
+  apt_repository: "repo={{ nvidia_driver_apt_repository }} state={{ nvidia_driver_ppa_state }} filename=gpu_driver"
 
 - name: Search for latset package
   shell: apt-cache search --names-only "nvidia-" | grep "nvidia-[[:digit:]]\+ " | awk '{print $1}' | uniq | sort -r | head -1
@@ -13,8 +13,13 @@
 
 - name: Create nvidia_driver_package variable
   set_fact:
-    nvidia_driver_package: "{{ _nv_latest_package.stdout if nvidia_driver_version == 'latest' else 'nvidia-'nvidia_driver_version }}"
+    nvidia_driver_package: "{{ _nv_latest_package.stdout }}"
+  when: nvidia_driver_version == 'latest'
 
+- name: Create nvidia_driver_package variable
+  set_fact:
+    nvidia_driver_package: "nvidia-{{ nvidia_driver_version }}"
+  when: nvidia_driver_version != 'latest'
 - name: Install nvidia driver
   apt: "name={{ nvidia_driver_package }} state=present force=yes update_cache=yes"
   register: nvidia_driver_install_result
